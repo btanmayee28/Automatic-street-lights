@@ -1,0 +1,22 @@
+const int LDRPin = A0; // Pin connected to LDR
+const int LEDPin = 13; // Pin connected to LED
+int threshold = 500;   // Threshold value to decide when to turn the light on
+
+void setup() {
+  pinMode(LDRPin, INPUT);
+  pinMode(LEDPin, OUTPUT);
+  Serial.begin(9600);  // Initialize serial communication for debugging
+}
+
+void loop() {
+  int LDRValue = analogRead(LDRPin); // Read the LDR value
+  Serial.println(LDRValue);          // Print the LDR value to the Serial Monitor for debugging
+
+  if (LDRValue < threshold) {
+    digitalWrite(LEDPin, HIGH); // Turn on the LED (street light)
+  } else {
+    digitalWrite(LEDPin, LOW);  // Turn off the LED (street light)
+  }
+
+  delay(100); // Small delay to stabilize the readings
+}
