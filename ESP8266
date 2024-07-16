@@ -1,0 +1,82 @@
+#include <ESP8266WiFi.h>
+
+const char* ssid = "your_SSID";
+const char* password = "your_PASSWORD";
+
+const int LDRPin = A0; // Pin connected to LDR
+const int LEDPin = D1; // Pin connected to LED
+int threshold = 500;   // Threshold value to decide when to turn the light on
+
+WiFiServer server(80);
+
+void setup() {
+  pinMode(LDRPin, INPUT);
+  pinMode(LEDPin, OUTPUT);
+  Serial.begin(115200);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+
+  // Start the server
+  server.begin();
+  Serial.println("Server started");
+
+  // Print the IP address
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  WiFiClient client = server.available();
+  if (client) {
+    Serial.println("New Client.");
+    String currentLine = "";
+
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        Serial.write(c);
+        if (c == '\n') {
+          if (currentLine.length() == 0) {
+            int LDRValue = analogRead(LDRPin);
+            if (LDRValue < threshold) {
+              digitalWrite(LEDPin, HIGH);
+            } else {
+              digitalWrite(LEDPin, LOW);
+            }
+
+            client.print("HTTP/1.1 200 OK\r\n");
+            client.print("Content-Type: text/html\r\n");
+            client.print("Connection: close\r\n");
+            client.print("\r\n");
+            client.print("<!DOCTYPE HTML>\r\n<html>\r\n");
+            client.print("LDR Value: ");
+            client.print(LDRValue);
+            client.print("<br>");
+            client.print("Threshold: ");
+            client.print(threshold);
+            client.print("<br>");
+            if (LDRValue < threshold) {
+              client.print("LED is ON");
+            } else {
+              client.print("LED is OFF");
+            }
+            client.print("</html>");
+            break;
+          } else {
+            currentLine = "";
+          }
+        } else if (c != '\r') {
+          currentLine += c;
+        }
+      }
+    }
+    client.stop();
+    Serial.println("Client Disconnected.");
+  }
+}
